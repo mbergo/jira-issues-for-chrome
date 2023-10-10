@@ -1,0 +1,151 @@
+Creating a Chrome extension involves several files, including a manifest file, HTML files, JavaScript files, and CSS files. Here's a step-by-step guide on how to create a Chrome extension that interacts with the Jira account and lists the issues reported by the user.
+
+1. manifest.json
+This is the configuration file for the Chrome extension. It specifies basic metadata about the extension such as the name and version, and references to its scripts and icons.
+
+manifest.json
+```json
+{
+  "manifest_version": 2,
+  "name": "Jira Issues",
+  "description": "This extension lists the issues reported by you in Jira",
+  "version": "1.0",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "https://*.atlassian.net/*"
+  ],
+  "browser_action": {
+    "default_icon": "icon.png",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.atlassian.net/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
+```
+
+2. popup.html
+This is the HTML file that will be shown when the user clicks on the extension icon in the Chrome toolbar.
+
+popup.html
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+  <h1>Jira Issues</h1>
+  <div id="issueList"></div>
+  <script src="popup.js"></script>
+</body>
+</html>
+```
+
+3. popup.js
+This JavaScript file handles the logic for the popup window. It communicates with the content script to fetch the issues reported by the user.
+
+popup.js
+```javascript
+document.addEventListener('DOMContentLoaded', function() {
+  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+    chrome.tabs.sendMessage(tabs[0].id, {action: "getIssues"}, function(response) {
+      var issueList = document.getElementById('issueList');
+      response.issues.forEach(function(issue) {
+        var a = document.createElement('a');
+        a.href = issue.url;
+        a.textContent = issue.key + ': ' + issue.summary;
+        issueList.appendChild(a);
+        issueList.appendChild(document.createElement('br'));
+      });
+    });
+  });
+});
+```
+
+4. content.js
+This JavaScript file is injected into the Jira web pages and interacts with the Jira API to fetch the issues reported by the user.
+
+content.js
+```javascript
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+  if (request.action == "getIssues") {
+    fetch('https://your-domain.atlassian.net/rest/api/2/search?jql=reporter=currentuser()', {
+      headers: {
+        'Authorization': 'Basic ' + btoa('email:api_token'),
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      var issues = data.issues.map(issue => {
+        return {
+          key: issue.key,
+          summary: issue.fields.summary,
+          url: 'https://your-domain.atlassian.net/browse/' + issue.key
+        };
+      });
+      sendResponse({issues: issues});
+    });
+    return true;  // Will respond asynchronously.
+  }
+});
+```
+
+5. styles.css
+This CSS file styles the popup window.
+
+styles.css
+```css
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  min-width: 300px;
+}
+
+h1 {
+  background-color: #0052cc;
+  color: white;
+  padding: 10px 0;
+  text-align: center;
+  margin: 0;
+}
+
+#issueList {
+  padding: 10px;
+}
+
+#issueList a {
+  display: block;
+  margin-bottom: 10px;
+}
+```
+
+6. README.md
+This markdown file provides instructions on how to install the extension.
+
+README.md
+```markdown
+# Jira Issues
+
+This Chrome extension lists the issues reported by you in Jira.
+
+## Installation
+
+1. Download or clone this repository.
+2. Open the Chrome browser and navigate to chrome://extensions.
+3. Enable Developer mode by ticking the checkbox in the upper-right corner.
+4. Click on the "Load unpacked extension" button.
+5. Select the directory containing the extension's files.
+
+## Usage
+
+Click on the extension's icon in the Chrome toolbar to see a list of issues reported by you. Click on an issue to open it in Jira.
+```
+
+This concludes a fully working implementation.

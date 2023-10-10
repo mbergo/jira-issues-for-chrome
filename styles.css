@@ -1,0 +1,23 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  min-width: 300px;
+}
+
+h1 {
+  background-color: #0052cc;
+  color: white;
+  padding: 10px 0;
+  text-align: center;
+  margin: 0;
+}
+
+#issueList {
+  padding: 10px;
+}
+
+#issueList a {
+  display: block;
+  margin-bottom: 10px;
+}
